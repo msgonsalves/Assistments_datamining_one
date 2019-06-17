@@ -50,37 +50,45 @@ class NeuralNet(nn.Module):
     def __init__(self):
         super(NeuralNet, self).__init__()
 
-        self.input_layer = nn.Linear(NUM_PROBLEMS * 2, 100)
-        self.layer_one = nn.Linear(100, 200)
-        self.layer_two = nn.Linear(200, 200)
-        self.layer_three = nn.Linear(200, 200)
-        self.layer_four = nn.Linear(200, 100)
+        self.input_layer = nn.Linear(NUM_PROBLEMS * 3, 100)
+        self.layer_one = nn.Linear(100, 100)
+        self.layer_two = nn.Linear(100, 100)
+        self.layer_three = nn.Linear(100, 100)
+        self.layer_four = nn.Linear(100, 100)
         self.layer_five = nn.Linear(100, 50)
         self.layer_six = nn.Linear(50, 25)
         self.layer_seven = nn.Linear(25, 1)
 
     def forward(self, input):
-        input = F.relu(self.input_layer(input))
+        input = F.sigmoid(self.input_layer(input))
+        # input = F.dropout(input, training=self.training)
+        input = F.sigmoid(self.layer_one(input))
         input = F.dropout(input, training=self.training)
-        input = F.relu(self.layer_one(input))
+        input = F.sigmoid(self.layer_two(input))
+        # input = F.dropout(input, training=self.training)
+        input = F.sigmoid(self.layer_three(input))
+        # input = F.dropout(input, training=self.training)
+        input = F.sigmoid(self.layer_four(input))
         input = F.dropout(input, training=self.training)
-        input = F.relu(self.layer_two(input))
-        input = F.dropout(input, training=self.training)
-        input = F.relu(self.layer_three(input))
-        input = F.dropout(input, training=self.training)
-        input = F.relu(self.layer_four(input))
-        input = F.dropout(input, training=self.training)
-        input = F.relu(self.layer_five(input))
-        input = F.dropout(input, training=self.training)
-        input = F.relu(self.layer_six(input))
-        input = F.dropout(input, training=self.training)
+        input = F.sigmoid(self.layer_five(input))
+        # input = F.dropout(input, training=self.training)
+        input = F.sigmoid(self.layer_six(input))
+
+        # input = F.dropout(input, training=self.training)
         input = F.sigmoid(self.layer_seven(input))
 
         return input
 
+def my_loss(label, output):
+    a = label-output
+    b = output-label
+
+    loss = torch.max(a,b)
+    return loss
+
 
 def train_network(neural_net, optimizer, training_data, training_labels, criterion):
-    for epoch in range(0, 40):
+    for epoch in range(0, 10):
 
         running_loss = 0
         for i in range(0, 900):
@@ -90,7 +98,7 @@ def train_network(neural_net, optimizer, training_data, training_labels, criteri
             # forward + backward + optimize
             outputs = neural_net(training_data[i])
 
-            loss = criterion(outputs, training_labels[i:i + 1].float())
+            loss = my_loss(outputs, training_labels[i:i + 1].float())
 
             loss.backward()
             optimizer.step()
@@ -112,7 +120,9 @@ def make_training_data(a_list, prob_ids):
         if a_prob in map:
             input_list.append(map[a_prob][0])
             input_list.append(map[a_prob][1])
+            input_list.append(map[a_prob][2])
         else:
+            input_list.append(0)
             input_list.append(0)
             input_list.append(0)
 
@@ -180,42 +190,57 @@ def main():
 
     ten_neural_network = NeuralNet()
     criterion = nn.L1Loss()
-    ten_optimizer = optim.SGD(ten_neural_network.parameters(), lr=0.001, momentum=0.05)
+    ten_optimizer = optim.SGD(ten_neural_network.parameters(), lr=0.001, momentum=0.5)
 
     ten_neural_network = train_network(ten_neural_network, ten_optimizer, ten_min_training_set, train_labels, criterion)
 
     twenty_neural_network = NeuralNet()
-    twenty_optimizer = optim.SGD(twenty_neural_network.parameters(), lr=0.001, momentum=0.4)
+    twenty_optimizer = optim.SGD(twenty_neural_network.parameters(), lr=0.001, momentum=0.5)
     twenty_neural_network = train_network(twenty_neural_network, twenty_optimizer, twenty_min_training_set,
                                           train_labels, criterion)
 
     all_neural_network = NeuralNet()
-    all_optimizer = optim.SGD(all_neural_network.parameters(), lr=0.001, momentum=0.4)
+    all_optimizer = optim.SGD(all_neural_network.parameters(), lr=0.001, momentum=0.5)
     all_neural_network = train_network(all_neural_network, all_optimizer, total_min_training_set, train_labels,
                                        criterion)
 
     print('Finished Training')
 
     total_wrong = 0
+    other_tot = 0
     for i in range(0, len(test_labels)):
         output = ten_neural_network(ten_min_test_set[i])
-
+        temp_other = round(output.item(), 0)
+        print(output, temp_other, test_labels[i])
+        if not temp_other == test_labels[i]:
+            other_tot+=1
         total_wrong += abs(output.item() - test_labels[i])
         # print(total_wrong)
+
+    print(other_tot)
     print(total_wrong)
 
     total_wrong = 0
+    other_tot = 0
     for i in range(0, len(test_labels)):
         output = twenty_neural_network(twenty_min_test_set[i])
+        temp_other = round(output.item(), 0)
+        if not temp_other == test_labels[i]:
+            other_tot += 1
         total_wrong += abs(output.item() - test_labels[i])
 
+    print(other_tot)
     print(total_wrong)
 
     total_wrong = 0
+    other_tot = 0
     for i in range(0, len(test_labels)):
         output = all_neural_network(total_min_test_set[i])
+        temp_other = round(output.item(), 0)
+        if not temp_other == test_labels[i]:
+            other_tot += 1
         total_wrong += abs(output.item() - test_labels[i])
-
+    print(other_tot)
     print(total_wrong)
 
 
