@@ -11,21 +11,96 @@ from collections import defaultdict
 from scipy import stats
 
 
-def parse_sfs(sfs, current_num):
-    real_sfs = ast.literal_eval(sfs)
+def is_float(str):
+    try:
+        float(str)
+        return True
+    except ValueError:
+        return False
 
+
+def get_float(val_one, val_two):
+    if val_two:
+        return val_one / val_two
+    else:
+        return val_one
+
+
+def parse_contentLaTex(clt):
+    clt = re.sub('[$]', '', clt)
+    total_string = clt.split('\\')
+    real_string = ""
+    print("clt: ", clt)
+    for a_val in total_string:
+        if 'mathrm' in a_val:
+            next_val = re.sub(r'.*{', '', a_val)
+            next_val = re.sub(r'}.*', '', next_val)
+            real_string += next_val
+
+        if a_val.isdigit():
+            real_string += a_val
+        else:
+            if is_float(a_val):
+                real_string += a_val
+
+        if "frac" in a_val:
+            first_val = a_val[a_val.find('{') + 1:a_val.find('}')]
+
+            second_val = a_val[8:10]
+            second_val = re.findall("\d+", second_val)
+            if len(second_val) > 0:
+                second_val = second_val[0]
+            next_val = ""
+            int_first_val = "test"
+            try:
+                int_first_val = float(first_val)
+                int_second_val = float(second_val)
+                next_val = str(int_first_val / int_second_val)
+            except:
+                if not int_first_val == "test":
+                    next_val = str(get_float(int_first_val, 1))
+                else:
+                    next_val = "0"
+
+            real_string += next_val
+
+    print("real string: ", real_string)
+    return real_string
+
+
+def parse_sfs(sfs, current_nums, cursor_loc):
+    real_sfs = ast.literal_eval(sfs)
+    place = real_sfs['numericIdentifier']
+    current_context = real_sfs['contentLaTeX']
+
+    real_string = parse_contentLaTex(current_context)
+    current_nums[place] = real_string
     code = real_sfs['code']
+
     if "Digit" in code:
         digit = re.findall("\d+", code)
-        current_num += digit[0]
+        current_nums[place] += digit[0]
+        cursor_loc += 1
     elif "Period" in code:
-        current_num += "."
+        current_nums[place] += "."
+        cursor_loc += 1
     elif "Back" in code:
-        current_num = current_num[:-1]
-    else:
-        current_num += " "
+        cursor_loc -= 1
 
-    return current_num
+    elif "Tab" in code:
+        pass
+    elif "left" in code:
+        cursor_loc -= 1
+    elif "right" in code:
+        cursor_loc += 1
+    elif "space" in code:
+        current_nums[place] += " "
+
+    else:
+        current_nums[place] += " "
+
+    return current_nums
+
 
 def make_full_maps(prob_ids, map):
     new_map = {}
@@ -122,11 +197,9 @@ def main():
 
     temp_tot_time = 0
     num_clicks = 0
-    current_fill_in = ""
+    current_fill_in = {}
     for i in range(0, len(student_ids)):
         temp_prob_id = problem_ids[i]
-        if not temp_prob_id in prob_ids:
-            prob_ids.append(temp_prob_id)
 
         temp_student_id = student_ids[i]
 
@@ -154,12 +227,13 @@ def main():
             ten_temp = {}
             twenty_temp = {}
             temp_tot_time = 0
-            current_fill_in = ""
             old_student_id = temp_student_id
 
         if action[i] == 'Math Keypress':
-            current_fill_in = parse_sfs(extended_info[i], current_fill_in)
-            print(current_fill_in)
+
+            if temp_prob_id == 'VH134366' and temp_student_id == '2333331366':
+                current_fill_in = parse_sfs(extended_info[i], current_fill_in)
+                print(current_fill_in)
 
         if action[i] == 'Enter Item':
             start_time = convert_string_to_time(time_of_event[i])
@@ -179,23 +253,28 @@ def main():
             if temp_tot_time < 600:
                 if temp_prob_id in ten_temp:
                     ten_temp[temp_prob_id] = [total_time + ten_temp[temp_prob_id][0],
-                                              num_clicks + ten_temp[temp_prob_id][1]]
+                                              num_clicks + ten_temp[temp_prob_id][1],
+                                              current_fill_in]
                 else:
                     ten_temp[temp_prob_id] = [total_time, num_clicks]
 
             if temp_tot_time < 1200:
                 if temp_prob_id in twenty_temp:
                     twenty_temp[temp_prob_id] = [total_time + twenty_temp[temp_prob_id][0],
-                                                 num_clicks + twenty_temp[temp_prob_id][1]]
+                                                 num_clicks + twenty_temp[temp_prob_id][1],
+                                                 current_fill_in]
                 else:
                     twenty_temp[temp_prob_id] = [total_time, num_clicks]
             if total_time < 3599:
                 if temp_prob_id in temp_times:
                     temp_times[temp_prob_id] = [total_time + temp_times[temp_prob_id][0],
-                                                num_clicks + temp_times[temp_prob_id][1]]
+                                                num_clicks + temp_times[temp_prob_id][1],
+                                                current_fill_in]
                 else:
                     temp_times[temp_prob_id] = [total_time, num_clicks]
 
+            # print(temp_student_id, temp_prob_id, current_fill_in)
+            current_fill_in = {}
             start_time = end_time
             num_clicks = 0
 
