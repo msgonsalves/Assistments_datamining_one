@@ -11,8 +11,11 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import BaggingRegressor
 from sklearn.model_selection import StratifiedKFold
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.feature_selection import RFE
 from scipy import interp
 from sklearn import metrics
+from sklearn import tree
 
 import torchvision
 
@@ -128,11 +131,11 @@ def make_training_data(a_list, prob_ids, is_tensor):
         if a_prob in map:
             input_list.append(map[a_prob][0])
             input_list.append(map[a_prob][1])
-            # input_list.append(map[a_prob][2])
-            # input_list.append(map[a_prob][3])
-            # input_list.append(map[a_prob][4])
-            # input_list.append(map[a_prob][5])
-            # input_list.append(map[a_prob][6])
+            input_list.append(map[a_prob][2])
+            input_list.append(map[a_prob][3])
+            input_list.append(map[a_prob][4])
+            input_list.append(map[a_prob][5])
+            input_list.append(map[a_prob][6])
         else:
             pass
             # input_list.append(-1)
@@ -142,6 +145,7 @@ def make_training_data(a_list, prob_ids, is_tensor):
             # input_list.append(-5)
     # input_list.append(a_list[2])
     # input_list.append(a_list[3])
+    # input_list.append(a_list[4])
     if is_tensor:
         return torch.FloatTensor(input_list)
     else:
@@ -154,29 +158,74 @@ def run_cross(all_data, ten_data, twenty_data, training_labels, prob_ids, num_sp
         labels.append(a_label[1])
     labels = np.array(labels)
 
-    features = []
+    ten_features = []
+    twenty_features = []
+    tot_features = []
     for a_person in all_data:
-        features.append(make_training_data(a_person, prob_ids, False))
-    features = np.array(features)
+        tot_features.append(make_training_data(a_person, prob_ids, False))
+    tot_features = np.array(tot_features)
+
+    for a_person in ten_data:
+        ten_features.append(make_training_data(a_person, prob_ids, False))
+    ten_features = np.array(ten_features)
+
+    for a_person in twenty_data:
+        twenty_features.append(make_training_data(a_person, prob_ids, False))
+    twenty_features = np.array(twenty_features)
 
     cv = StratifiedKFold(n_splits=num_splits)
 
-    rf = RandomForestRegressor(n_estimators=500, random_state=45)
+    ten_rf = RandomForestRegressor(n_estimators=50)
+    twenty_rf = RandomForestRegressor(n_estimators=50)
+    tot_rf = RandomForestRegressor(n_estimators=50)
+    dt = tree.DecisionTreeRegressor()
+    bc = BaggingRegressor(n_estimators=50)
+    etr = ExtraTreesRegressor(n_estimators=50)
 
-    aucs = []
+    ten_aucs = []
+    twenty_aucs = []
+    tot_aucs = []
 
-    for train, test in cv.split(features, labels):
-        rf.fit(features[train], labels[train])
-        predictions = rf.predict(features[test])
+    for train, test in cv.split(ten_features, labels):
+        ten_rf.fit(ten_features[train], labels[train])
+        predictions = ten_rf.predict(ten_features[test])
 
         fpr, tpr, thresholds = metrics.roc_curve(labels[test], predictions)
 
         roc_auc = metrics.auc(fpr, tpr)
-        aucs.append(roc_auc)
+        ten_aucs.append(roc_auc)
         # print(roc_auc)
 
+    for train, test in cv.split(twenty_features, labels):
+        twenty_rf.fit(twenty_features[train], labels[train])
+        predictions = twenty_rf.predict(twenty_features[test])
 
-    print("avg auc with ", num_splits, " folds = ", sum(aucs)/len(aucs))
+        fpr, tpr, thresholds = metrics.roc_curve(labels[test], predictions)
+
+        roc_auc = metrics.auc(fpr, tpr)
+        twenty_aucs.append(roc_auc)
+        # print(roc_auc)
+
+    for train, test in cv.split(tot_features, labels):
+        tot_rf.fit(tot_features[train], labels[train])
+        predictions = tot_rf.predict(tot_features[test])
+
+        fpr, tpr, thresholds = metrics.roc_curve(labels[test], predictions)
+
+        roc_auc = metrics.auc(fpr, tpr)
+        tot_aucs.append(roc_auc)
+        # print(roc_auc)
+    selector = RFE(tot_rf)
+    selector = selector.fit(tot_features, labels)
+
+    print(selector.ranking_)
+    print(selector.support_)
+    print("avg ten auc with ", num_splits, " folds = ", round(sum(ten_aucs) / len(ten_aucs), 3))
+    print("avg twenty auc with ", num_splits, " folds = ", round(sum(twenty_aucs) / len(twenty_aucs), 3))
+    print("avg tot auc with ", num_splits, " folds = ", round(sum(tot_aucs) / len(tot_aucs), 3))
+
+    return (ten_rf, twenty_rf, tot_rf)
+
 
 def run_random(all_data, ten_data, twenty_data, training_labels, prob_ids):
     labels = []
@@ -263,9 +312,63 @@ def run_random(all_data, ten_data, twenty_data, training_labels, prob_ids):
 def main():
     all_data, ten_data, twenty_data, training_labels, prob_ids = get_files()
 
+    train_ten_set = ten_data[0:900]
+    train_twenty_set = twenty_data[0:900]
+    train_all_set = all_data[0:900]
+    train_labels = training_labels[0:900]
+    test_ten_set = ten_data[900:1231]
+    test_twenty_set = twenty_data[900:1231]
+    test_all_set = all_data[900:1231]
+    test_labels = training_labels[900:1231]
+
     # run_random(all_data, ten_data, twenty_data, training_labels, prob_ids)
-    for i in range(5, 50, 5):
-        run_cross(all_data, ten_data, twenty_data, training_labels, prob_ids, i)
+    for i in range(5, 12, 5):
+        ten_mod, twenty_mod, tot_mod = run_cross(train_all_set, train_ten_set, train_twenty_set, train_labels, prob_ids,
+                                                 i)
+
+    j_test_labels = []
+    for a_label in test_labels:
+        j_test_labels.append(a_label[1])
+
+    ten_features = []
+    twenty_features = []
+    tot_features = []
+    for a_person in test_all_set:
+        tot_features.append(make_training_data(a_person, prob_ids, False))
+    tot_features = np.array(tot_features)
+
+    for a_person in test_twenty_set:
+        ten_features.append(make_training_data(a_person, prob_ids, False))
+    ten_features = np.array(ten_features)
+
+    for a_person in test_ten_set:
+        twenty_features.append(make_training_data(a_person, prob_ids, False))
+    twenty_features = np.array(twenty_features)
+
+
+    ten_predictions = ten_mod.predict(ten_features)
+    fpr, tpr, thresholds = metrics.roc_curve(j_test_labels, ten_predictions)
+    ten_roc_auc = metrics.auc(fpr, tpr)
+
+    twenty_predictions = twenty_mod.predict(twenty_features)
+    fpr, tpr, thresholds = metrics.roc_curve(j_test_labels, twenty_predictions)
+    twenty_roc_auc = metrics.auc(fpr, tpr)
+
+    tot_predictions = tot_mod.predict(tot_features)
+    fpr, tpr, thresholds = metrics.roc_curve(j_test_labels, tot_predictions)
+    tot_roc_auc = metrics.auc(fpr, tpr)
+
+    file = open('ten_twenty_full_predictions.csv', 'w+', newline='')
+    writer = csv.writer(file)
+    writer.writerow(["ten minute prediction", "twenty minute prediction", "full prediction", "actual label", "student id"])
+    for i in range(0,len(ten_predictions)):
+        writer.writerow([ten_predictions[i], twenty_predictions[i], tot_predictions[i], j_test_labels[i], test_labels[i][0]])
+
+    file.close()
+    print("ten auc:", round(ten_roc_auc, 3))
+    print("twenty auc:", round(twenty_roc_auc, 3))
+    print("tot auc:", round(tot_roc_auc, 3))
+
     # print(ten_data[0])
     # print(twenty_data[0])
     # print(all_data[0])
@@ -277,14 +380,7 @@ def main():
     # for a_label in training_labels:
     #     just_labels.append(a_label[1])
     #
-    # train_ten_set = ten_data[0:900]
-    # train_twenty_set = twenty_data[0:900]
-    # train_all_set = all_data[0:900]
-    # train_labels = just_labels[0:900]
-    # test_ten_set = ten_data[900:1231]
-    # test_twenty_set = twenty_data[900:1231]
-    # test_all_set = all_data[900:1231]
-    # test_labels = just_labels[900:1231]
+
     #
     # print(training_labels[0])
     # transform = transforms.Compose(
