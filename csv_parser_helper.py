@@ -13,12 +13,14 @@ from collections import defaultdict
 from scipy import stats
 
 SELECTION = ['VH098810', 'VH098519', 'VH098808', 'VH098759', 'VH098740', 'VH098753', 'VH098783', 'VH098783', 'VH098812',
-             'VH098839', 'VH098597', 'VH098556', 'VH098522', 'VH098779', 'VH098834', 'VH139047']
+             'VH098839', 'VH098597', 'VH098556', 'VH098522', 'VH098779', 'VH098834']
 OTHER = ['HELPMAT8', 'SecTimeOut', 'VH356862', 'BlockRev', 'EOSTimeLft']
 
 MULT_FILL_IN = ['VH134366', 'VH139196']
 
 SINGLE_FILL_IN = ['VH134387', 'VH134373']
+
+MATCHING = ['VH139047']
 
 
 def grade(ans, given_ans, a_prob, extra_time, running_time):
@@ -63,6 +65,9 @@ def grade(ans, given_ans, a_prob, extra_time, running_time):
                     tot_quest += 1
         return [tot_correct / tot_quest, (running_time + extra_time) * (tot_correct / tot_quest)]
 
+    if a_prob in MATCHING:
+        return [0, running_time]
+
 
 def is_float(str):
     try:
@@ -86,6 +91,17 @@ def problem_answers(id_map, answer):
                 id_map[a_prob][answer[a_prob][2]['selection']] += 1
             else:
                 id_map[a_prob][answer[a_prob][2]['selection']] = 1
+        elif a_prob in MATCHING:
+            for an_answer in answer[a_prob][2]:
+                if an_answer in id_map[a_prob]:
+                    if answer[a_prob][2][an_answer] in id_map[a_prob][an_answer]:
+                        id_map[a_prob][an_answer][answer[a_prob][2][an_answer]] += 1
+                    else:
+                        id_map[a_prob][an_answer][answer[a_prob][2][an_answer]] = 1
+                else:
+                    id_map[a_prob][an_answer] = {}
+                    id_map[a_prob][an_answer][answer[a_prob][2][an_answer]] = 1
+
         else:
             for a_val in answer[a_prob][2]:
                 if a_val in id_map[a_prob]:
@@ -279,12 +295,11 @@ def main():
             if line_count == 0:
                 line_count += 1
             else:
-                label_student_ids.append(row[1])
-
-                if row[2] == 'TRUE':
-                    training_label.append([row[1], 0])
+                label_student_ids.append(row[0])
+                if row[1] == 'True':
+                    training_label.append([row[0], 1])
                 else:
-                    training_label.append([row[1], 1])
+                    training_label.append([row[0], 0])
             line_count += 1
 
     # print(training_label)
@@ -464,6 +479,16 @@ def main():
             selection = extended_info[i]
             choice = selection[selection.find('_') + 1: selection.find(':')]
             current_fill_in['selection'] = choice
+
+
+        if action[i] == 'DropChoice':
+            selection = extended_info[i]
+            a_list = ast.literal_eval(selection)
+            for a_response in a_list:
+                current_fill_in[a_response['source']] = str(a_response['target'])
+
+            if temp_student_id == '2333000033':
+                print(current_fill_in)
 
         if action[i] == 'Enter Item':
             start_time = convert_string_to_time(time_of_event[i])
@@ -849,54 +874,68 @@ def main():
                         for a_part in prob_ids[a_prob][an_answer]:
                             init_row.append(a_prob + " " + an_answer)
                             break
+            print(init_row)
             other_writer.writerow(init_row)
         else:
             row = []
             row.append(first_ten_minutes[i - 1][0])
             first_multi = True
             second_multi = True
+            third_multi = True
             k = 0
             for j in range(0, len(init_row) - 1):
-                if first_multi or not ('VH134366' in init_row[j + 1]):
-                    if second_multi or not ('VH139196' in init_row[j + 1]):
-                        if init_row[j + 1] in SELECTION:
-                            if len(tot_ans[k][i - 1]) > 0:
+                if third_multi or not ('VH139047' in init_row[j + 1]):
+                    if first_multi or not ('VH134366' in init_row[j + 1]):
+                        if second_multi or not ('VH139196' in init_row[j + 1]):
+                            if init_row[j + 1] in SELECTION:
 
-                                row.append(tot_ans[k][i - 1]['selection'])
-                                k += 1
-                            else:
+                                if len(tot_ans[k][i - 1]) > 0:
+                                    row.append(tot_ans[k][i - 1]['selection'])
+                                    k += 1
+                                else:
+                                    row.append(-1)
+                                    k += 1
+                            elif init_row[j + 1] in OTHER:
                                 row.append(-1)
                                 k += 1
-                        elif init_row[j + 1] in OTHER:
-                            row.append(-1)
-                            k += 1
-                        elif 'VH134366' in init_row[j + 1] or 'VH139196' in init_row[j + 1]:
-                            if first_multi:
-                                first_multi = False
-                            else:
-                                second_multi = False
-                            z = 0
-                            for an_answer in tot_ans[k][i - 1]:
-                                row.append(tot_ans[k][i - 1][an_answer][0])
-                                z += 1
-                            if second_multi:
-                                for y in range(z, 5):
+                            elif 'VH139047' in init_row[j + 1]:
+                                if third_multi:
+                                    third_multi = False
+                                z=0
+                                for an_answer in tot_ans[k][i-1]:
+                                    row.append(tot_ans[k][i - 1][an_answer][0])
+                                    z+=1
+                                for y in range(z,4):
                                     row.append(-1)
-                            else:
-                                for y in range(z, 3):
-                                    row.append(-1)
-                            k += 1
-                        elif 'VH134373' in init_row[j + 1] or 'VH134387' in init_row[j + 1]:
-                            if len(tot_ans[k][i - 1]) > 0:
+                                k+=1
+                            elif 'VH134366' in init_row[j + 1] or 'VH139196' in init_row[j + 1]:
+                                if first_multi:
+                                    first_multi = False
+                                else:
+                                    second_multi = False
+                                z = 0
                                 for an_answer in tot_ans[k][i - 1]:
                                     row.append(tot_ans[k][i - 1][an_answer][0])
+                                    z += 1
+                                if second_multi:
+                                    for y in range(z, 5):
+                                        row.append(-1)
+                                else:
+                                    for y in range(z, 3):
+                                        row.append(-1)
+                                k += 1
+                            elif 'VH134373' in init_row[j + 1] or 'VH134387' in init_row[j + 1]:
+                                if len(tot_ans[k][i - 1]) > 0:
+                                    for an_answer in tot_ans[k][i - 1]:
+                                        row.append(tot_ans[k][i - 1][an_answer][0])
+                                else:
+                                    row.append(-1)
+                                k += 1
                             else:
-                                row.append(-1)
-                            k += 1
-                        else:
-                            pass
+                                pass
 
             other_writer.writerow(row)
+
         # print(row)
     other_file.close()
     first = True
@@ -974,15 +1013,15 @@ def main():
         tot_flagged.append([1, alt_time_for_problems[i][0]])
         for j in range(0, len(prob_ids)):
             if not o_prob_ids[j] in OTHER:
-                if ten_rushed[j] > j_ten_time[j][i]:
+                if ten_rushed[j] >= j_ten_time[j][i]:
                     ten_flag = 0
                 else:
                     ten_flag = 1
-                if twenty_rushed[j] > j_twenty_time[j][i]:
+                if twenty_rushed[j] >= j_twenty_time[j][i]:
                     twenty_flag = 0
                 else:
                     twenty_flag = 1
-                if tot_rushed[j] > j_tot_time[j][i]:
+                if tot_rushed[j] >= j_tot_time[j][i]:
                     tot_flag = 0
                     tot_flagged[i] = [0, alt_time_for_problems[i][0]]
                 else:

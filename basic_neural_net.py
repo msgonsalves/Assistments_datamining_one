@@ -134,7 +134,7 @@ def make_training_data(a_list, prob_ids, is_tensor):
             input_list.append(map[a_prob][2])
             input_list.append(map[a_prob][3])
             input_list.append(map[a_prob][4])
-            input_list.append(map[a_prob][5])
+            # input_list.append(map[a_prob][5])
             input_list.append(map[a_prob][6])
         else:
             pass
@@ -143,9 +143,11 @@ def make_training_data(a_list, prob_ids, is_tensor):
             # input_list.append(-5)
             # input_list.append(-5)
             # input_list.append(-5)
-    # input_list.append(a_list[2])
-    # input_list.append(a_list[3])
-    # input_list.append(a_list[4])
+    input_list.append(a_list[2])
+    input_list.append(a_list[3])
+    input_list.append(a_list[4])
+
+
     if is_tensor:
         return torch.FloatTensor(input_list)
     else:
@@ -175,56 +177,100 @@ def run_cross(all_data, ten_data, twenty_data, training_labels, prob_ids, num_sp
 
     cv = StratifiedKFold(n_splits=num_splits)
 
-    ten_rf = RandomForestRegressor(n_estimators=50)
-    twenty_rf = RandomForestRegressor(n_estimators=50)
-    tot_rf = RandomForestRegressor(n_estimators=50)
+    ten_rf = RandomForestRegressor(n_estimators=75)
+    twenty_rf = RandomForestRegressor(n_estimators=75)
+    tot_rf = RandomForestRegressor(n_estimators=75)
     dt = tree.DecisionTreeRegressor()
-    bc = BaggingRegressor(n_estimators=50)
-    etr = ExtraTreesRegressor(n_estimators=50)
+
+    ten_bc = BaggingRegressor(n_estimators=50)
+    twenty_bc = BaggingRegressor(n_estimators=50)
+    tot_bc = BaggingRegressor(n_estimators=50)
+
+    ten_etr = ExtraTreesRegressor(n_estimators=50)
+    twenty_etr = ExtraTreesRegressor(n_estimators=50)
+    tot_etr = ExtraTreesRegressor(n_estimators=50)
 
     ten_aucs = []
     twenty_aucs = []
     tot_aucs = []
+    ten_models = []
+    twenty_models = []
+    tot_models = []
 
     for train, test in cv.split(ten_features, labels):
         ten_rf.fit(ten_features[train], labels[train])
-        predictions = ten_rf.predict(ten_features[test])
+        rf_predictions = ten_rf.predict(ten_features[test])
+
+        ten_bc.fit(ten_features[train], labels[train])
+        bc_predictions = ten_bc.predict(ten_features[test])
+
+        ten_etr.fit(ten_features[train], labels[train])
+        etr_predictions = ten_etr.predict(ten_features[test])
+
+        predictions = []
+        for i in range(0, len(rf_predictions)):
+            predictions.append(np.mean([rf_predictions[i], bc_predictions[i], etr_predictions[i]]))
 
         fpr, tpr, thresholds = metrics.roc_curve(labels[test], predictions)
 
+
+        ten_models = [ten_rf, ten_bc, ten_etr]
         roc_auc = metrics.auc(fpr, tpr)
         ten_aucs.append(roc_auc)
         # print(roc_auc)
 
     for train, test in cv.split(twenty_features, labels):
-        twenty_rf.fit(twenty_features[train], labels[train])
-        predictions = twenty_rf.predict(twenty_features[test])
+        twenty_rf.fit(ten_features[train], labels[train])
+        rf_predictions = twenty_rf.predict(ten_features[test])
+
+        twenty_bc.fit(ten_features[train], labels[train])
+        bc_predictions = twenty_bc.predict(ten_features[test])
+
+        twenty_etr.fit(ten_features[train], labels[train])
+        etr_predictions = twenty_etr.predict(ten_features[test])
+
+        predictions = []
+        for i in range(0, len(rf_predictions)):
+            predictions.append(np.mean([rf_predictions[i], bc_predictions[i], etr_predictions[i]]))
 
         fpr, tpr, thresholds = metrics.roc_curve(labels[test], predictions)
+
+        twenty_models = [twenty_rf, twenty_bc, twenty_etr]
 
         roc_auc = metrics.auc(fpr, tpr)
         twenty_aucs.append(roc_auc)
         # print(roc_auc)
 
     for train, test in cv.split(tot_features, labels):
-        tot_rf.fit(tot_features[train], labels[train])
-        predictions = tot_rf.predict(tot_features[test])
+        tot_rf.fit(ten_features[train], labels[train])
+        rf_predictions = tot_rf.predict(ten_features[test])
+
+        tot_bc.fit(ten_features[train], labels[train])
+        bc_predictions = tot_bc.predict(ten_features[test])
+
+        tot_etr.fit(ten_features[train], labels[train])
+        etr_predictions = tot_etr.predict(ten_features[test])
+
+        predictions = []
+        for i in range(0, len(rf_predictions)):
+            predictions.append(np.mean([rf_predictions[i], bc_predictions[i], etr_predictions[i]]))
 
         fpr, tpr, thresholds = metrics.roc_curve(labels[test], predictions)
 
+        tot_models = [tot_rf, tot_bc, tot_etr]
         roc_auc = metrics.auc(fpr, tpr)
         tot_aucs.append(roc_auc)
         # print(roc_auc)
-    selector = RFE(tot_rf)
-    selector = selector.fit(tot_features, labels)
-
-    print(selector.ranking_)
-    print(selector.support_)
+    # selector = RFE(tot_rf)
+    # selector = selector.fit(tot_features, labels)
+    #
+    # print(selector.ranking_)
+    # print(selector.support_)
     print("avg ten auc with ", num_splits, " folds = ", round(sum(ten_aucs) / len(ten_aucs), 3))
     print("avg twenty auc with ", num_splits, " folds = ", round(sum(twenty_aucs) / len(twenty_aucs), 3))
     print("avg tot auc with ", num_splits, " folds = ", round(sum(tot_aucs) / len(tot_aucs), 3))
 
-    return (ten_rf, twenty_rf, tot_rf)
+    return (ten_models, twenty_models, tot_models)
 
 
 def run_random(all_data, ten_data, twenty_data, training_labels, prob_ids):
@@ -312,14 +358,30 @@ def run_random(all_data, ten_data, twenty_data, training_labels, prob_ids):
 def main():
     all_data, ten_data, twenty_data, training_labels, prob_ids = get_files()
 
-    train_ten_set = ten_data[0:900]
-    train_twenty_set = twenty_data[0:900]
-    train_all_set = all_data[0:900]
-    train_labels = training_labels[0:900]
-    test_ten_set = ten_data[900:1231]
-    test_twenty_set = twenty_data[900:1231]
-    test_all_set = all_data[900:1231]
-    test_labels = training_labels[900:1231]
+    dum_list = []
+    for i in range(0, 1232):
+        dum_list.append(1)
+
+    print(dum_list)
+    train_ten_set, test_ten_set, ten_train_labels, test_labels = train_test_split(ten_data, training_labels, test_size=0.3,
+                                                                                    random_state=1457684)
+    print(test_labels[2], test_labels[19], test_labels[151])
+    print(test_ten_set[2][0], test_ten_set[19][0], test_ten_set[151][0])
+    print(ten_train_labels[2], ten_train_labels[19], ten_train_labels[151])
+    print(train_ten_set[2][0], train_ten_set[19][0], train_ten_set[151][0])
+
+    train_twenty_set, test_twenty_set, twenty_train_labels, test_labels = train_test_split(ten_data, training_labels,
+                                                                                  test_size=0.3,
+                                                                                  random_state=1457684)
+    print(test_labels[2], test_labels[19], test_labels[151])
+    print(test_twenty_set[2][0], test_twenty_set[19][0], test_twenty_set[151][0])
+    print(twenty_train_labels[2], twenty_train_labels[19], twenty_train_labels[151])
+    print(train_twenty_set[2][0], train_twenty_set[19][0], train_twenty_set[151][0])
+
+    train_all_set, test_all_set, train_labels, test_labels = train_test_split(ten_data, training_labels,
+                                                                                    test_size=0.3,
+                                                                                    random_state=1457684)
+    print(test_labels[2], test_labels[19], test_labels[151])
 
     # run_random(all_data, ten_data, twenty_data, training_labels, prob_ids)
     for i in range(5, 12, 5):
@@ -337,37 +399,66 @@ def main():
         tot_features.append(make_training_data(a_person, prob_ids, False))
     tot_features = np.array(tot_features)
 
-    for a_person in test_twenty_set:
+    for a_person in test_all_set:
         ten_features.append(make_training_data(a_person, prob_ids, False))
     ten_features = np.array(ten_features)
 
-    for a_person in test_ten_set:
+    for a_person in test_twenty_set:
         twenty_features.append(make_training_data(a_person, prob_ids, False))
     twenty_features = np.array(twenty_features)
 
 
-    ten_predictions = ten_mod.predict(ten_features)
+
+    rf_ten_predictions = ten_mod[0].predict(ten_features)
+    bc_ten_predictions = ten_mod[1].predict(ten_features)
+    etr_ten_predictions = ten_mod[2].predict(ten_features)
+    ten_predictions = []
+    for i in range(0, len(rf_ten_predictions)):
+        ten_predictions.append(np.mean([rf_ten_predictions[i], bc_ten_predictions[i], etr_ten_predictions[i]]))
     fpr, tpr, thresholds = metrics.roc_curve(j_test_labels, ten_predictions)
     ten_roc_auc = metrics.auc(fpr, tpr)
+    print("ten auc:", round(ten_roc_auc, 3))
 
-    twenty_predictions = twenty_mod.predict(twenty_features)
+    rf_twenty_predictions = twenty_mod[0].predict(twenty_features)
+    bc_twenty_predictions = twenty_mod[1].predict(twenty_features)
+    etr_twenty_predictions = twenty_mod[2].predict(twenty_features)
+    twenty_predictions = []
+    for i in range(0, len(rf_ten_predictions)):
+        twenty_predictions.append(np.mean([rf_twenty_predictions[i], bc_twenty_predictions[i], etr_twenty_predictions[i]]))
     fpr, tpr, thresholds = metrics.roc_curve(j_test_labels, twenty_predictions)
     twenty_roc_auc = metrics.auc(fpr, tpr)
+    print("twenty auc:", round(twenty_roc_auc, 3))
 
-    tot_predictions = tot_mod.predict(tot_features)
+    rf_tot_predictions = tot_mod[0].predict(tot_features)
+    bc_tot_predictions = tot_mod[1].predict(tot_features)
+    etr_tot_predictions = tot_mod[2].predict(tot_features)
+    tot_predictions = []
+    for i in range(0, len(rf_ten_predictions)):
+        tot_predictions.append(np.mean([rf_tot_predictions[i], bc_tot_predictions[i], etr_tot_predictions[i]]))
     fpr, tpr, thresholds = metrics.roc_curve(j_test_labels, tot_predictions)
     tot_roc_auc = metrics.auc(fpr, tpr)
+    print("tot auc:", round(tot_roc_auc, 3))
 
     file = open('ten_twenty_full_predictions.csv', 'w+', newline='')
     writer = csv.writer(file)
-    writer.writerow(["ten minute prediction", "twenty minute prediction", "full prediction", "actual label", "student id"])
-    for i in range(0,len(ten_predictions)):
-        writer.writerow([ten_predictions[i], twenty_predictions[i], tot_predictions[i], j_test_labels[i], test_labels[i][0]])
+    writer.writerow(
+        ["ten minute prediction", "twenty minute prediction", "full prediction", "actual label", "student id"])
+    for i in range(0, len(ten_predictions)):
+        writer.writerow(
+            [ten_predictions[i], twenty_predictions[i], tot_predictions[i], j_test_labels[i], test_labels[i][0]])
 
-    file.close()
-    print("ten auc:", round(ten_roc_auc, 3))
-    print("twenty auc:", round(twenty_roc_auc, 3))
+    # file.close()
+
+    rf_tot_predictions = tot_mod[0].predict(tot_features)
+    bc_tot_predictions = tot_mod[1].predict(tot_features)
+    etr_tot_predictions = tot_mod[2].predict(tot_features)
+    tot_predictions = []
+    for i in range(0, len(rf_ten_predictions)):
+        tot_predictions.append(np.mean([rf_tot_predictions[i], bc_tot_predictions[i], etr_tot_predictions[i]]))
+    fpr, tpr, thresholds = metrics.roc_curve(j_test_labels, tot_predictions)
+    tot_roc_auc = metrics.auc(fpr, tpr)
     print("tot auc:", round(tot_roc_auc, 3))
+
 
     # print(ten_data[0])
     # print(twenty_data[0])
