@@ -1855,7 +1855,7 @@ def main():
     for i in range(0, len(ten_comp_problems)):
         temp_map = {}
         for j in range(0, len(prob_ids)):
-            
+
 
     print(first_ten_minutes_zcore[0])
     print(first_twenty_minutes_zcore[0])
