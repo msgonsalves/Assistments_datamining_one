@@ -2,6 +2,8 @@ import csv
 import pprint
 import pickle
 import os
+from typing import List, Any
+
 import pandas
 import ast
 import re
@@ -24,8 +26,6 @@ MATCHING = ['VH139047']
 
 
 def grade(ans, given_ans, a_prob, extra_time, running_time):
-
-
     if a_prob in SELECTION:
         if 'selection' in given_ans:
             if given_ans['selection'] == ans[0]:
@@ -104,6 +104,7 @@ def problem_answers(id_map, answer):
 
         else:
             for a_val in answer[a_prob][2]:
+                # print(a_val, id_map[a_prob], answer[a_prob][2][a_val])
                 if a_val in id_map[a_prob]:
                     if answer[a_prob][2][a_val][0] in id_map[a_prob][a_val]:
                         id_map[a_prob][a_val][answer[a_prob][2][a_val][0]] += 1
@@ -272,6 +273,26 @@ def main():
     label_student_ids = []
     training_label = []
 
+    ten_comp_student_ids = []
+    ten_comp_problem_ids = []
+    ten_comp_type_of_item = []
+    ten_comp_action = []
+    ten_comp_extended_info = []
+    ten_comp_time_of_event = []
+
+    twenty_comp_student_ids = []
+    twenty_comp_problem_ids = []
+    twenty_comp_type_of_item = []
+    twenty_comp_action = []
+    twenty_comp_extended_info = []
+    twenty_comp_time_of_event = []
+
+    tot_comp_student_ids = []
+    tot_comp_problem_ids = []
+    tot_comp_type_of_item = []
+    tot_comp_action = []
+    tot_comp_extended_info = []
+    tot_comp_time_of_event = []
     with open('data_a_train.csv')as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
@@ -285,6 +306,54 @@ def main():
                 action.append(row[4])
                 extended_info.append(row[5])
                 time_of_event.append(row[6])
+
+            line_count += 1
+
+    with open('data_a_hidden_10.csv')as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                pass
+            else:
+                ten_comp_student_ids.append(row[0])
+                ten_comp_problem_ids.append(row[2])
+                ten_comp_type_of_item.append(row[3])
+                ten_comp_action.append(row[4])
+                ten_comp_extended_info.append(row[5])
+                ten_comp_time_of_event.append(row[6])
+
+            line_count += 1
+
+    with open('data_a_hidden_20.csv')as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                pass
+            else:
+                twenty_comp_student_ids.append(row[0])
+                twenty_comp_problem_ids.append(row[2])
+                twenty_comp_type_of_item.append(row[3])
+                twenty_comp_action.append(row[4])
+                twenty_comp_extended_info.append(row[5])
+                twenty_comp_time_of_event.append(row[6])
+
+            line_count += 1
+
+    with open('data_a_hidden_30.csv')as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                pass
+            else:
+                tot_comp_student_ids.append(row[0])
+                tot_comp_problem_ids.append(row[2])
+                tot_comp_type_of_item.append(row[3])
+                tot_comp_action.append(row[4])
+                tot_comp_extended_info.append(row[5])
+                tot_comp_time_of_event.append(row[6])
 
             line_count += 1
 
@@ -307,6 +376,10 @@ def main():
     first_ten_minutes = []
     first_twenty_minutes = []
     alt_time_for_problems = []
+
+    ten_comp_problems = []
+    twenty_comp_problems = []
+    tot_comp_problems = []
     prob_ids = {}
     o_prob_ids = []
 
@@ -480,7 +553,6 @@ def main():
             choice = selection[selection.find('_') + 1: selection.find(':')]
             current_fill_in['selection'] = choice
 
-
         if action[i] == 'DropChoice':
             selection = extended_info[i]
             a_list = ast.literal_eval(selection)
@@ -582,11 +654,567 @@ def main():
     ten_nav_bar_clicked.append(indiv_ten_nav_bar_clicked)
     twenty_nav_bar_clicked.append(indiv_twenty_nav_bar_clicked)
     tot_nav_bar_clicked.append(indiv_tot_nav_bar_clicked)
-    print(len(ten_nav_bar_clicked))
-    print(ten_nav_bar_clicked)
     alt_time_for_problems.append([temp_student_id, make_full_maps(prob_ids, temp_times, full=True)])
     first_ten_minutes.append([temp_student_id, make_full_maps(prob_ids, ten_temp, full=False)])
     first_twenty_minutes.append([temp_student_id, make_full_maps(prob_ids, twenty_temp, full=False)])
+    temp = {}
+    # ten_comp_time_for_problems = defaultdict(list)
+    # ten_comp_clicks_for_problems = defaultdict(list)
+    old_student_id = ten_comp_student_ids[0]
+    old_problem_id = 0
+    temp_student_id = old_student_id
+    ten_comp_nav_bar_clicked = []
+    temp_nav_bar_clicked = 0
+    start_calc_time = 0
+    draw_time = 0
+    start_draw_time = 0
+    end_draw_time = 0
+    draw_on = False
+    calc_time = 0
+    num_clicks = 0
+    calc_open = False
+    current_fill_in = {}
+    for i in range(0, len(ten_comp_student_ids)):
+        temp_prob_id = ten_comp_problem_ids[i]
+
+        temp_student_id = ten_comp_student_ids[i]
+
+        num_clicks += 1
+
+        if not temp_student_id == old_student_id:
+            ten_comp_problems.append([old_student_id, make_full_maps(prob_ids, temp, full=True)])
+
+            ten_comp_nav_bar_clicked.append(temp_nav_bar_clicked)
+
+            temp = {}
+
+            old_student_id = temp_student_id
+            indiv_ten_nav_bar_clicked = 0
+
+            tot_start_time = convert_string_to_time(ten_comp_time_of_event[i])
+
+        if ten_comp_type_of_item[i] == 'MultipleFillInBlank' or ten_comp_type_of_item[i] == 'FillInBlank':
+            if ten_comp_action[i] == 'Math Keypress':
+                current_fill_in = parse_sfs(ten_comp_extended_info[i], current_fill_in, temp_prob_id, nums=True)
+
+        elif ten_comp_type_of_item[i] == 'CompositeCR':
+            if ten_comp_action[i] == 'Math Keypress':
+                current_fill_in = parse_sfs(ten_comp_extended_info[i], current_fill_in, temp_prob_id, nums=False)
+
+        if ten_comp_action[i] == "Click Progress Navigator":
+            current_time = convert_string_to_time(ten_comp_time_of_event[i])
+
+            if current_time > tot_start_time:
+                time_lapsed = (end_draw_time - tot_start_time)
+            elif current_time == tot_start_time:
+                print("something went very wrong", temp_student_id)
+            else:
+                time_lapsed = (3600 - tot_start_time) + current_time
+
+            temp_nav_bar_clicked += 1
+
+        if ten_comp_action[i] == "Open Calculator":
+            if draw_on:
+                end_draw_time = convert_string_to_time(ten_comp_time_of_event[i])
+
+                if end_draw_time > start_draw_time:
+                    draw_time += (end_draw_time - start_draw_time)
+                elif end_draw_time == start_draw_time:
+                    pass
+                else:
+                    draw_time += (3600 - start_draw_time) + end_draw_time
+                draw_on = False
+
+            calc_open = True
+            start_calc_time = convert_string_to_time(ten_comp_time_of_event[i])
+
+        elif ten_comp_action[i] == "Close Calculator":
+            end_calc_time = convert_string_to_time(ten_comp_time_of_event[i])
+            calc_open = False
+
+            if end_calc_time > start_calc_time:
+                calc_time += (end_calc_time - start_calc_time)
+            elif end_calc_time == start_calc_time:
+                pass
+            else:
+                calc_time += (3600 - start_calc_time) + end_calc_time
+
+        if ten_comp_action[i] == 'Scratchwork Mode On':
+            if calc_open:
+                end_calc_time = convert_string_to_time(ten_comp_time_of_event[i])
+
+                if end_calc_time > start_calc_time:
+                    calc_time += (end_calc_time - start_calc_time)
+                elif end_calc_time == start_calc_time:
+                    pass
+                else:
+                    calc_time += (3600 - start_calc_time) + end_calc_time
+
+                calc_open = False
+
+            start_draw_time = convert_string_to_time(ten_comp_time_of_event[i])
+            draw_on = True
+
+        if ten_comp_action[i] == 'Scratchwork Mode Off':
+            end_draw_time = convert_string_to_time(ten_comp_time_of_event[i])
+            draw_on = False
+
+            if end_draw_time > start_draw_time:
+                draw_time += (end_draw_time - start_draw_time)
+            elif end_draw_time == start_draw_time:
+                pass
+            else:
+                draw_time += (3600 - start_draw_time) + end_draw_time
+
+        if ten_comp_action[i] == 'Click Choice':
+            selection = ten_comp_extended_info[i]
+            choice = selection[selection.find('_') + 1: selection.find(':')]
+            current_fill_in['selection'] = choice
+
+        if ten_comp_action[i] == 'DropChoice':
+            selection = ten_comp_extended_info[i]
+            a_list = ast.literal_eval(selection)
+            for a_response in a_list:
+                current_fill_in[a_response['source']] = str(a_response['target'])
+
+        if ten_comp_action[i] == 'Enter Item':
+            start_time = convert_string_to_time(ten_comp_time_of_event[i])
+            num_clicks = 0
+            old_problem_id = temp_prob_id
+            try:
+                current_fill_in = temp_times[temp_prob_id][2]
+            except:
+                current_fill_in = {}
+
+        if ten_comp_action[i] == 'Exit Item' and old_problem_id == temp_prob_id:
+            end_time = convert_string_to_time(ten_comp_time_of_event[i])
+            temp_tot_time = 0
+            if end_time > tot_start_time:
+                temp_tot_time = end_time - tot_start_time
+
+            elif end_time == tot_start_time:
+                pass
+            else:
+                temp_tot_time = (3600 - tot_start_time) + end_time
+
+            if end_time > start_time:
+                total_time = (convert_string_to_time(ten_comp_time_of_event[i]) - start_time)
+            elif end_time == start_time:
+                total_time = total_time
+            else:
+                total_time = (3600 - start_time) + end_time
+
+            if calc_open:
+                if end_time > start_calc_time:
+                    calc_time += (end_time - start_calc_time)
+                elif end_time == start_calc_time:
+                    pass
+                else:
+                    calc_time += (3600 - start_calc_time) + end_time
+
+            if draw_on:
+                if end_time > start_draw_time:
+                    draw_time += (end_time - start_draw_time)
+                elif end_time == start_draw_time:
+                    pass
+                else:
+                    draw_time += (3600 - start_draw_time) + end_time
+
+            if temp_prob_id in temp:
+                temp[temp_prob_id] = [total_time + temp[temp_prob_id][0],
+                                      num_clicks + temp[temp_prob_id][1],
+                                      current_fill_in,
+                                      calc_time + temp[temp_prob_id][3],
+                                      draw_time + temp[temp_prob_id][4],
+                                      temp[temp_prob_id][5] + 1]
+            else:
+                temp[temp_prob_id] = [total_time, num_clicks, current_fill_in, calc_time, draw_time, 0]
+
+            current_fill_in = {}
+            calc_open = False
+            draw_on = False
+            calc_time = 0
+            draw_time = 0
+            start_time = end_time
+            num_clicks = 0
+
+    ten_comp_problems.append([old_student_id, make_full_maps(prob_ids, temp, full=True)])
+    ten_comp_nav_bar_clicked.append(temp_nav_bar_clicked)
+
+    temp = {}
+    # ten_comp_time_for_problems = defaultdict(list)
+    # ten_comp_clicks_for_problems = defaultdict(list)
+    old_student_id = twenty_comp_student_ids[0]
+    old_problem_id = 0
+    temp_student_id = old_student_id
+    twenty_comp_nav_bar_clicked = []
+    temp_nav_bar_clicked = 0
+    start_calc_time = 0
+    draw_time = 0
+    start_draw_time = 0
+    end_draw_time = 0
+    draw_on = False
+    calc_time = 0
+    num_clicks = 0
+    calc_open = False
+    current_fill_in = {}
+    for i in range(0, len(twenty_comp_student_ids)):
+        temp_prob_id = twenty_comp_problem_ids[i]
+
+        temp_student_id = twenty_comp_student_ids[i]
+
+        num_clicks += 1
+
+        if not temp_student_id == old_student_id:
+            twenty_comp_problems.append([old_student_id, make_full_maps(prob_ids, temp, full=True)])
+
+            twenty_comp_nav_bar_clicked.append(temp_nav_bar_clicked)
+
+            temp = {}
+
+            old_student_id = temp_student_id
+            indiv_ten_nav_bar_clicked = 0
+
+            tot_start_time = convert_string_to_time(twenty_comp_time_of_event[i])
+
+        if twenty_comp_type_of_item[i] == 'MultipleFillInBlank' or twenty_comp_type_of_item[i] == 'FillInBlank':
+            if twenty_comp_action[i] == 'Math Keypress':
+                current_fill_in = parse_sfs(twenty_comp_extended_info[i], current_fill_in, temp_prob_id, nums=True)
+
+        elif twenty_comp_type_of_item[i] == 'CompositeCR':
+            if twenty_comp_action[i] == 'Math Keypress':
+                current_fill_in = parse_sfs(twenty_comp_extended_info[i], current_fill_in, temp_prob_id, nums=False)
+
+        if twenty_comp_action[i] == "Click Progress Navigator":
+            current_time = convert_string_to_time(twenty_comp_time_of_event[i])
+
+            if current_time > tot_start_time:
+                time_lapsed = (end_draw_time - tot_start_time)
+            elif current_time == tot_start_time:
+                print("something went very wrong", temp_student_id)
+            else:
+                time_lapsed = (3600 - tot_start_time) + current_time
+
+            temp_nav_bar_clicked += 1
+
+        if twenty_comp_action[i] == "Open Calculator":
+            if draw_on:
+                end_draw_time = convert_string_to_time(twenty_comp_time_of_event[i])
+
+                if end_draw_time > start_draw_time:
+                    draw_time += (end_draw_time - start_draw_time)
+                elif end_draw_time == start_draw_time:
+                    pass
+                else:
+                    draw_time += (3600 - start_draw_time) + end_draw_time
+                draw_on = False
+
+            calc_open = True
+            start_calc_time = convert_string_to_time(twenty_comp_time_of_event[i])
+
+        elif twenty_comp_action[i] == "Close Calculator":
+            end_calc_time = convert_string_to_time(twenty_comp_time_of_event[i])
+            calc_open = False
+
+            if end_calc_time > start_calc_time:
+                calc_time += (end_calc_time - start_calc_time)
+            elif end_calc_time == start_calc_time:
+                pass
+            else:
+                calc_time += (3600 - start_calc_time) + end_calc_time
+
+        if twenty_comp_action[i] == 'Scratchwork Mode On':
+            if calc_open:
+                end_calc_time = convert_string_to_time(twenty_comp_time_of_event[i])
+
+                if end_calc_time > start_calc_time:
+                    calc_time += (end_calc_time - start_calc_time)
+                elif end_calc_time == start_calc_time:
+                    pass
+                else:
+                    calc_time += (3600 - start_calc_time) + end_calc_time
+
+                calc_open = False
+
+            start_draw_time = convert_string_to_time(twenty_comp_time_of_event[i])
+            draw_on = True
+
+        if twenty_comp_action[i] == 'Scratchwork Mode Off':
+            end_draw_time = convert_string_to_time(twenty_comp_time_of_event[i])
+            draw_on = False
+
+            if end_draw_time > start_draw_time:
+                draw_time += (end_draw_time - start_draw_time)
+            elif end_draw_time == start_draw_time:
+                pass
+            else:
+                draw_time += (3600 - start_draw_time) + end_draw_time
+
+        if twenty_comp_action[i] == 'Click Choice':
+            selection = twenty_comp_extended_info[i]
+            choice = selection[selection.find('_') + 1: selection.find(':')]
+            current_fill_in['selection'] = choice
+
+        if twenty_comp_action[i] == 'DropChoice':
+            selection = twenty_comp_extended_info[i]
+            a_list = ast.literal_eval(selection)
+            for a_response in a_list:
+                current_fill_in[a_response['source']] = str(a_response['target'])
+
+        if twenty_comp_action[i] == 'Enter Item':
+            start_time = convert_string_to_time(twenty_comp_time_of_event[i])
+            num_clicks = 0
+            old_problem_id = temp_prob_id
+            try:
+                current_fill_in = temp_times[temp_prob_id][2]
+            except:
+                current_fill_in = {}
+
+        if twenty_comp_action[i] == 'Exit Item' and old_problem_id == temp_prob_id:
+            end_time = convert_string_to_time(twenty_comp_time_of_event[i])
+            temp_tot_time = 0
+            if end_time > tot_start_time:
+                temp_tot_time = end_time - tot_start_time
+
+            elif end_time == tot_start_time:
+                pass
+            else:
+                temp_tot_time = (3600 - tot_start_time) + end_time
+
+            if end_time > start_time:
+                total_time = (convert_string_to_time(twenty_comp_time_of_event[i]) - start_time)
+            elif end_time == start_time:
+                total_time = total_time
+            else:
+                total_time = (3600 - start_time) + end_time
+
+            if calc_open:
+                if end_time > start_calc_time:
+                    calc_time += (end_time - start_calc_time)
+                elif end_time == start_calc_time:
+                    pass
+                else:
+                    calc_time += (3600 - start_calc_time) + end_time
+
+            if draw_on:
+                if end_time > start_draw_time:
+                    draw_time += (end_time - start_draw_time)
+                elif end_time == start_draw_time:
+                    pass
+                else:
+                    draw_time += (3600 - start_draw_time) + end_time
+
+            if temp_prob_id in temp:
+                temp[temp_prob_id] = [total_time + temp[temp_prob_id][0],
+                                      num_clicks + temp[temp_prob_id][1],
+                                      current_fill_in,
+                                      calc_time + temp[temp_prob_id][3],
+                                      draw_time + temp[temp_prob_id][4],
+                                      temp[temp_prob_id][5] + 1]
+            else:
+                temp[temp_prob_id] = [total_time, num_clicks, current_fill_in, calc_time, draw_time, 0]
+
+            current_fill_in = {}
+            calc_open = False
+            draw_on = False
+            calc_time = 0
+            draw_time = 0
+            start_time = end_time
+            num_clicks = 0
+
+    twenty_comp_problems.append([old_student_id, make_full_maps(prob_ids, temp, full=True)])
+    twenty_comp_nav_bar_clicked.append(temp_nav_bar_clicked)
+
+    temp = {}
+    # ten_comp_time_for_problems = defaultdict(list)
+    # ten_comp_clicks_for_problems = defaultdict(list)
+    old_student_id = tot_comp_student_ids[0]
+    old_problem_id = 0
+    temp_student_id = old_student_id
+    tot_comp_nav_bar_clicked = []
+    temp_nav_bar_clicked = 0
+    start_calc_time = 0
+    draw_time = 0
+    start_draw_time = 0
+    end_draw_time = 0
+    draw_on = False
+    calc_time = 0
+    num_clicks = 0
+    calc_open = False
+    current_fill_in = {}
+    for i in range(0, len(tot_comp_student_ids)):
+        temp_prob_id = tot_comp_problem_ids[i]
+
+        temp_student_id = tot_comp_student_ids[i]
+
+        num_clicks += 1
+
+        if not temp_student_id == old_student_id:
+            tot_comp_problems.append([old_student_id, make_full_maps(prob_ids, temp, full=True)])
+
+            tot_comp_nav_bar_clicked.append(temp_nav_bar_clicked)
+
+            temp = {}
+
+            old_student_id = temp_student_id
+            indiv_ten_nav_bar_clicked = 0
+
+            tot_start_time = convert_string_to_time(tot_comp_time_of_event[i])
+
+        if tot_comp_type_of_item[i] == 'MultipleFillInBlank' or tot_comp_type_of_item[i] == 'FillInBlank':
+            if tot_comp_action[i] == 'Math Keypress':
+                current_fill_in = parse_sfs(tot_comp_extended_info[i], current_fill_in, temp_prob_id, nums=True)
+
+        elif tot_comp_type_of_item[i] == 'CompositeCR':
+            if tot_comp_action[i] == 'Math Keypress':
+                current_fill_in = parse_sfs(tot_comp_extended_info[i], current_fill_in, temp_prob_id, nums=False)
+
+        if tot_comp_action[i] == "Click Progress Navigator":
+            current_time = convert_string_to_time(tot_comp_time_of_event[i])
+
+            if current_time > tot_start_time:
+                time_lapsed = (end_draw_time - tot_start_time)
+            elif current_time == tot_start_time:
+                print("something went very wrong", temp_student_id)
+            else:
+                time_lapsed = (3600 - tot_start_time) + current_time
+
+            temp_nav_bar_clicked += 1
+
+        if tot_comp_action[i] == "Open Calculator":
+            if draw_on:
+                end_draw_time = convert_string_to_time(tot_comp_time_of_event[i])
+
+                if end_draw_time > start_draw_time:
+                    draw_time += (end_draw_time - start_draw_time)
+                elif end_draw_time == start_draw_time:
+                    pass
+                else:
+                    draw_time += (3600 - start_draw_time) + end_draw_time
+                draw_on = False
+
+            calc_open = True
+            start_calc_time = convert_string_to_time(tot_comp_time_of_event[i])
+
+        elif tot_comp_action[i] == "Close Calculator":
+            end_calc_time = convert_string_to_time(tot_comp_time_of_event[i])
+            calc_open = False
+
+            if end_calc_time > start_calc_time:
+                calc_time += (end_calc_time - start_calc_time)
+            elif end_calc_time == start_calc_time:
+                pass
+            else:
+                calc_time += (3600 - start_calc_time) + end_calc_time
+
+        if tot_comp_action[i] == 'Scratchwork Mode On':
+            if calc_open:
+                end_calc_time = convert_string_to_time(tot_comp_time_of_event[i])
+
+                if end_calc_time > start_calc_time:
+                    calc_time += (end_calc_time - start_calc_time)
+                elif end_calc_time == start_calc_time:
+                    pass
+                else:
+                    calc_time += (3600 - start_calc_time) + end_calc_time
+
+                calc_open = False
+
+            start_draw_time = convert_string_to_time(tot_comp_time_of_event[i])
+            draw_on = True
+
+        if tot_comp_action[i] == 'Scratchwork Mode Off':
+            end_draw_time = convert_string_to_time(tot_comp_time_of_event[i])
+            draw_on = False
+
+            if end_draw_time > start_draw_time:
+                draw_time += (end_draw_time - start_draw_time)
+            elif end_draw_time == start_draw_time:
+                pass
+            else:
+                draw_time += (3600 - start_draw_time) + end_draw_time
+
+        if tot_comp_action[i] == 'Click Choice':
+            selection = tot_comp_extended_info[i]
+            choice = selection[selection.find('_') + 1: selection.find(':')]
+            current_fill_in['selection'] = choice
+
+        if tot_comp_action[i] == 'DropChoice':
+            selection = tot_comp_extended_info[i]
+            a_list = ast.literal_eval(selection)
+            for a_response in a_list:
+                current_fill_in[a_response['source']] = str(a_response['target'])
+
+        if tot_comp_action[i] == 'Enter Item':
+            start_time = convert_string_to_time(tot_comp_time_of_event[i])
+            num_clicks = 0
+            old_problem_id = temp_prob_id
+            try:
+                current_fill_in = temp_times[temp_prob_id][2]
+            except:
+                current_fill_in = {}
+
+        if tot_comp_action[i] == 'Exit Item' and old_problem_id == temp_prob_id:
+            end_time = convert_string_to_time(tot_comp_time_of_event[i])
+            temp_tot_time = 0
+            if end_time > tot_start_time:
+                temp_tot_time = end_time - tot_start_time
+
+            elif end_time == tot_start_time:
+                pass
+            else:
+                temp_tot_time = (3600 - tot_start_time) + end_time
+
+            if end_time > start_time:
+                total_time = (convert_string_to_time(tot_comp_time_of_event[i]) - start_time)
+            elif end_time == start_time:
+                total_time = total_time
+            else:
+                total_time = (3600 - start_time) + end_time
+
+            if calc_open:
+                if end_time > start_calc_time:
+                    calc_time += (end_time - start_calc_time)
+                elif end_time == start_calc_time:
+                    pass
+                else:
+                    calc_time += (3600 - start_calc_time) + end_time
+
+            if draw_on:
+                if end_time > start_draw_time:
+                    draw_time += (end_time - start_draw_time)
+                elif end_time == start_draw_time:
+                    pass
+                else:
+                    draw_time += (3600 - start_draw_time) + end_time
+
+            if temp_prob_id in temp:
+                temp[temp_prob_id] = [total_time + temp[temp_prob_id][0],
+                                      num_clicks + temp[temp_prob_id][1],
+                                      current_fill_in,
+                                      calc_time + temp[temp_prob_id][3],
+                                      draw_time + temp[temp_prob_id][4],
+                                      temp[temp_prob_id][5] + 1]
+            else:
+                temp[temp_prob_id] = [total_time, num_clicks, current_fill_in, calc_time, draw_time, 0]
+
+            current_fill_in = {}
+            calc_open = False
+            draw_on = False
+            calc_time = 0
+            draw_time = 0
+            start_time = end_time
+            num_clicks = 0
+
+    tot_comp_problems.append([old_student_id, make_full_maps(prob_ids, temp, full=True)])
+    tot_comp_nav_bar_clicked.append(temp_nav_bar_clicked)
+
+    print(ten_comp_problems[0])
+    print(twenty_comp_problems[0])
+    print(tot_comp_problems[0])
+
+    print(len(ten_nav_bar_clicked))
+    print(ten_nav_bar_clicked)
 
     alt_time_for_problems.sort()
     first_ten_minutes.sort()
@@ -658,6 +1286,7 @@ def main():
     print(prob_ans)
 
     ten_temp_zscores_list = []
+
     twenty_temp_zscores_list = []
     tot_temp_zscores_list = []
     ten_temp_click_zscores_list = []
@@ -703,6 +1332,79 @@ def main():
     z_all_twenty_calc = []
     z_all_tot_calc = []
 
+    ten_comp_zcores_list = []
+    ten_comp_click_score_list = []
+    ten_comp_calc_time = []
+    ten_comp_grade = []
+    ten_comp_ans = []
+    ten_comp_draw_time = []
+    ten_comp_rushed = []
+    z_all_ten_comp_calc = []
+    ten_comp_wrong_time = []
+
+    twenty_comp_zcores_list = []
+    twenty_comp_click_score_list = []
+    twenty_comp_grade = []
+    twenty_comp_ans = []
+    twenty_comp_draw_time = []
+    twenty_comp_rushed = []
+    twenty_comp_calc_time = []
+    z_all_twenty_comp_calc = []
+    twenty_comp_wrong_time = []
+
+    tot_comp_zcores_list = []
+    tot_comp_click_score_list = []
+    tot_comp_time_zscore = []
+    j_tot_comp_time = []
+    tot_comp_grade = []
+    tot_comp_ans = []
+    j_tot_comp_c_time = []
+    j_tot_comp_d_time = []
+    tot_comp_draw_time = []
+    tot_comp_rushed = []
+    tot_comp_calc_time = []
+    z_all_tot_comp_calc = []
+    tot_comp_wrong_time = []
+
+    for i in range(0, len(ten_comp_problems)):
+        temp_time = 0
+        temp_calc = 0
+
+        for a_prob in prob_ids:
+            temp_grade, temp_wrong_time = grade(prob_ans[a_prob], ten_comp_problems[i][1][a_prob][2], a_prob,
+                                                ten_comp_problems[i][1][a_prob][0], temp_time)
+
+            temp_calc += ten_comp_problems[i][1][a_prob][3]
+
+        ten_comp_wrong_time.append(temp_time)
+        z_all_ten_comp_calc.append(temp_calc)
+
+    for i in range(0, len(twenty_comp_problems)):
+        temp_time = 0
+        temp_calc = 0
+
+        for a_prob in prob_ids:
+            temp_grade, temp_wrong_time = grade(prob_ans[a_prob], twenty_comp_problems[i][1][a_prob][2], a_prob,
+                                                twenty_comp_problems[i][1][a_prob][0], temp_time)
+
+            temp_calc += ten_comp_problems[i][1][a_prob][3]
+
+        twenty_comp_wrong_time.append(temp_time)
+        z_all_twenty_comp_calc.append(temp_calc)
+
+    for i in range(0, len(tot_comp_problems)):
+        temp_time = 0
+        temp_calc = 0
+
+        for a_prob in prob_ids:
+            temp_grade, temp_wrong_time = grade(prob_ans[a_prob], tot_comp_problems[i][1][a_prob][2], a_prob,
+                                                tot_comp_problems[i][1][a_prob][0], temp_time)
+
+            temp_calc += tot_comp_problems[i][1][a_prob][3]
+
+        tot_comp_wrong_time.append(temp_time)
+        z_all_tot_comp_calc.append(temp_calc)
+
     for i in range(0, len(first_ten_minutes)):
         temp_ten_wrong_time = 0
         temp_twenty_wrong_time = 0
@@ -733,6 +1435,87 @@ def main():
         z_all_ten_calc.append(a_ten_calc)
         z_all_twenty_calc.append(a_twenty_calc)
         z_all_tot_calc.append(a_tot_calc)
+
+    for a_prob in prob_ids:
+        temp_regular_list = []
+        temp_c_r_list = []
+        temp_grade = []
+        temp_ans = []
+        temp_calc_time = []
+        temp_draw_time = []
+        temp_revisists = []
+
+        for i in range(0, len(ten_comp_problems)):
+            temp_regular_list.append(ten_comp_problems[i][1][a_prob][0])
+            temp_c_r_list.append(ten_comp_problems[i][1][a_prob][1])
+            temp_revisists.append(ten_comp_problems[i][1][a_prob][5])
+            temp_s_grade, temp_ten_wrong_time = grade(prob_ans[a_prob], ten_comp_problems[i][1][a_prob][2], a_prob,
+                                                      ten_comp_problems[i][1][a_prob][0], 0)
+            temp_grade.append(temp_s_grade)
+            temp_ans.append(ten_comp_problems[i][1][a_prob][2])
+            temp_calc_time.append(ten_comp_problems[i][1][a_prob][3])
+            temp_draw_time.append(ten_comp_problems[i][1][a_prob][4])
+
+        ten_comp_zcores_list.append(temp_regular_list)
+        ten_comp_click_score_list.append(temp_c_r_list)
+        ten_comp_grade.append(temp_grade)
+        ten_comp_ans.append(ten_comp_problems[i][1][a_prob][2])
+        ten_comp_calc_time.append(temp_calc_time)
+        ten_comp_draw_time.append(temp_draw_time)
+
+    for a_prob in prob_ids:
+        temp_regular_list = []
+        temp_c_r_list = []
+        temp_grade = []
+        temp_ans = []
+        temp_calc_time = []
+        temp_draw_time = []
+        temp_revisists = []
+
+        for i in range(0, len(twenty_comp_problems)):
+            temp_regular_list.append(twenty_comp_problems[i][1][a_prob][0])
+            temp_c_r_list.append(twenty_comp_problems[i][1][a_prob][1])
+            temp_revisists.append(twenty_comp_problems[i][1][a_prob][5])
+            temp_s_grade, temp_twenty_wrong_time = grade(prob_ans[a_prob], twenty_comp_problems[i][1][a_prob][2], a_prob,
+                                                         twenty_comp_problems[i][1][a_prob][0], 0)
+            temp_grade.append(temp_s_grade)
+            temp_ans.append(twenty_comp_problems[i][1][a_prob][2])
+            temp_calc_time.append(twenty_comp_problems[i][1][a_prob][3])
+            temp_draw_time.append(twenty_comp_problems[i][1][a_prob][4])
+
+        twenty_comp_zcores_list.append(temp_regular_list)
+        twenty_comp_click_score_list.append(temp_c_r_list)
+        twenty_comp_grade.append(temp_grade)
+        twenty_comp_ans.append(ten_comp_problems[i][1][a_prob][2])
+        twenty_comp_calc_time.append(temp_calc_time)
+        twenty_comp_draw_time.append(temp_draw_time)
+
+    for a_prob in prob_ids:
+        temp_regular_list = []
+        temp_c_r_list = []
+        temp_grade = []
+        temp_ans = []
+        temp_calc_time = []
+        temp_draw_time = []
+        temp_revisists = []
+
+        for i in range(0, len(tot_comp_problems)):
+            temp_regular_list.append(tot_comp_problems[i][1][a_prob][0])
+            temp_c_r_list.append(tot_comp_problems[i][1][a_prob][1])
+            temp_revisists.append(tot_comp_problems[i][1][a_prob][5])
+            temp_s_grade, temp_ten_wrong_time = grade(prob_ans[a_prob], tot_comp_problems[i][1][a_prob][2], a_prob,
+                                                      tot_comp_problems[i][1][a_prob][0], 0)
+            temp_grade.append(temp_s_grade)
+            temp_ans.append(tot_comp_problems[i][1][a_prob][2])
+            temp_calc_time.append(tot_comp_problems[i][1][a_prob][3])
+            temp_draw_time.append(tot_comp_problems[i][1][a_prob][4])
+
+        tot_comp_zcores_list.append(temp_regular_list)
+        tot_comp_click_score_list.append(temp_c_r_list)
+        tot_comp_grade.append(temp_grade)
+        tot_comp_ans.append(tot_comp_problems[i][1][a_prob][2])
+        tot_comp_calc_time.append(temp_calc_time)
+        tot_comp_draw_time.append(temp_draw_time)
 
     for a_prob in prob_ids:
         ten_temp_regular_list = []
@@ -803,8 +1586,6 @@ def main():
         j_ten_c_time.append(temp_ten_calc_time)
         j_twenty_c_time.append(temp_twenty_calc_time)
         j_tot_c_time.append(temp_tot_calc_time)
-
-
 
         j_ten_d_time.append(temp_ten_draw_time)
         j_twenty_d_time.append(temp_twenty_draw_time)
@@ -901,13 +1682,13 @@ def main():
                             elif 'VH139047' in init_row[j + 1]:
                                 if third_multi:
                                     third_multi = False
-                                z=0
-                                for an_answer in tot_ans[k][i-1]:
+                                z = 0
+                                for an_answer in tot_ans[k][i - 1]:
                                     row.append(tot_ans[k][i - 1][an_answer][0])
-                                    z+=1
-                                for y in range(z,4):
+                                    z += 1
+                                for y in range(z, 4):
                                     row.append(-1)
-                                k+=1
+                                k += 1
                             elif 'VH134366' in init_row[j + 1] or 'VH139196' in init_row[j + 1]:
                                 if first_multi:
                                     first_multi = False
@@ -1006,10 +1787,16 @@ def main():
     print(ten_temp_click_zscores_list[0])
     print(twenty_temp_click_zscores_list[0])
     tot_flagged = []
+    ten_comp_flagged = []
+    twenty_comp_flagged = []
+    tot_comp_flagged = []
     for i in range(0, len(alt_time_for_problems)):
         ten_temp_zcores_map = {}
         twenty_temp_zcores_map = {}
         tot_temp_zcores_map = {}
+        ten_comp_flagged.append([1, ten_comp_problems[i][0]])
+        twenty_comp_flagged.append([1, twenty_comp_problems[i][0]])
+        tot_comp_flagged.append([1, tot_comp_problems[i][0]])
         tot_flagged.append([1, alt_time_for_problems[i][0]])
         for j in range(0, len(prob_ids)):
             if not o_prob_ids[j] in OTHER:
@@ -1026,6 +1813,15 @@ def main():
                     tot_flagged[i] = [0, alt_time_for_problems[i][0]]
                 else:
                     tot_flag = 1
+                if len(ten_comp_problems) < i:
+                    if ten_rushed[j] >= ten_comp_zcores_list[j][i]:
+                        ten_comp_flagged[i] = [0, ten_comp_problems[i][0]]
+                if len(twenty_comp_problems) < i:
+                    if twenty_rushed[j] >= twenty_comp_zcores_list[j][i]:
+                        twenty_comp_flagged[i] = [0, twenty_comp_problems[i][0]]
+                if len(tot_comp_problems) < i:
+                    if tot_rushed[j] >= tot_comp_zcores_list[j][i]:
+                        tot_comp_flagged[i] = [0, tot_comp_problems[i][0]]
             else:
                 ten_flag = 0
                 twenty_flag = 0
@@ -1041,6 +1837,7 @@ def main():
                                                   tot_grade[j][i], tot_calc_time[j][i], tot_draw_time[j][i],
                                                   tot_revisits[j][i], tot_flag]
 
+
         first_ten_minutes_zcore.append(
             [first_ten_minutes[i][0], ten_temp_zcores_map, ten_wrong_time_zscore[i], ten_nav_bar_clicked[i],
              z_ten_calc_time[i]])
@@ -1050,6 +1847,15 @@ def main():
         tot_zscore.append(
             [alt_time_for_problems[i][0], tot_temp_zcores_map, tot_wrong_time_zscore[i], tot_nav_bar_clicked[i],
              z_tot_calc_time[i]])
+
+    ten_comp_zscore = []
+    twenty_comp_zscore = []
+    tot_comp_zscore = []
+
+    for i in range(0, len(ten_comp_problems)):
+        temp_map = {}
+        for j in range(0, len(prob_ids)):
+            
 
     print(first_ten_minutes_zcore[0])
     print(first_twenty_minutes_zcore[0])
@@ -1122,24 +1928,28 @@ def main():
     first_twenty_minutes_zcore.sort()
     training_label.sort()
 
-    file = open("alt_time_for_problems_file", 'wb')
+    # file = open("alt_time_for_problems_file", 'wb')
+    # pickle.dump(tot_zscore, file)
+    # file.close()
+    #
+    # file = open("ten_minutes", 'wb')
+    # pickle.dump(first_ten_minutes_zcore, file)
+    # file.close()
+    #
+    # file = open("twenty_minutes", 'wb')
+    # pickle.dump(first_twenty_minutes_zcore, file)
+    # file.close()
+    #
+    # file = open("training_labels", 'wb')
+    # pickle.dump(training_label, file)
+    # file.close()
+    #
+    # file = open("prob_ids", 'wb')
+    # pickle.dump(prob_ids, file)
+    # file.close()
+
+    file = open('ten_min_comp_data.csv', 'wb')
     pickle.dump(tot_zscore, file)
-    file.close()
-
-    file = open("ten_minutes", 'wb')
-    pickle.dump(first_ten_minutes_zcore, file)
-    file.close()
-
-    file = open("twenty_minutes", 'wb')
-    pickle.dump(first_twenty_minutes_zcore, file)
-    file.close()
-
-    file = open("training_labels", 'wb')
-    pickle.dump(training_label, file)
-    file.close()
-
-    file = open("prob_ids", 'wb')
-    pickle.dump(prob_ids, file)
     file.close()
 
 
