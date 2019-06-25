@@ -1320,6 +1320,34 @@ def main():
     twenty_wrong_time = []
     tot_wrong_time = []
 
+    ten_training_means = []
+    ten_training_sd = []
+    twenty_training_means = []
+    twenty_training_sd = []
+    tot_training_means = []
+    tot_training_sd = []
+
+    ten_training_click_means = []
+    ten_training_click_sd = []
+    twenty_training_click_means = []
+    twenty_training_click_sd = []
+    tot_training_click_means = []
+    tot_training_click_sd = []
+
+    ten_training_calc_means = []
+    ten_training_calc_sd = []
+    twenty_training_calc_means = []
+    twenty_training_calc_sd = []
+    tot_training_calc_means = []
+    tot_training_calc_sd = []
+
+    ten_training_draw_means = []
+    ten_training_draw_sd = []
+    twenty_training_draw_means = []
+    twenty_training_draw_sd = []
+    tot_training_draw_means = []
+    tot_training_draw_sd = []
+
     ten_rushed = []
     twenty_rushed = []
     tot_rushed = []
@@ -1338,6 +1366,7 @@ def main():
     ten_comp_grade = []
     ten_comp_ans = []
     ten_comp_draw_time = []
+    ten_comp_revisits = []
     ten_comp_rushed = []
     z_all_ten_comp_calc = []
     ten_comp_wrong_time = []
@@ -1347,6 +1376,7 @@ def main():
     twenty_comp_grade = []
     twenty_comp_ans = []
     twenty_comp_draw_time = []
+    twenty_comp_revisits = []
     twenty_comp_rushed = []
     twenty_comp_calc_time = []
     z_all_twenty_comp_calc = []
@@ -1361,6 +1391,7 @@ def main():
     j_tot_comp_c_time = []
     j_tot_comp_d_time = []
     tot_comp_draw_time = []
+    tot_comp_revisits = []
     tot_comp_rushed = []
     tot_comp_calc_time = []
     z_all_tot_comp_calc = []
@@ -1462,6 +1493,7 @@ def main():
         ten_comp_ans.append(ten_comp_problems[i][1][a_prob][2])
         ten_comp_calc_time.append(temp_calc_time)
         ten_comp_draw_time.append(temp_draw_time)
+        ten_comp_revisits.append(temp_revisists)
 
     for a_prob in prob_ids:
         temp_regular_list = []
@@ -1476,7 +1508,8 @@ def main():
             temp_regular_list.append(twenty_comp_problems[i][1][a_prob][0])
             temp_c_r_list.append(twenty_comp_problems[i][1][a_prob][1])
             temp_revisists.append(twenty_comp_problems[i][1][a_prob][5])
-            temp_s_grade, temp_twenty_wrong_time = grade(prob_ans[a_prob], twenty_comp_problems[i][1][a_prob][2], a_prob,
+            temp_s_grade, temp_twenty_wrong_time = grade(prob_ans[a_prob], twenty_comp_problems[i][1][a_prob][2],
+                                                         a_prob,
                                                          twenty_comp_problems[i][1][a_prob][0], 0)
             temp_grade.append(temp_s_grade)
             temp_ans.append(twenty_comp_problems[i][1][a_prob][2])
@@ -1489,6 +1522,7 @@ def main():
         twenty_comp_ans.append(ten_comp_problems[i][1][a_prob][2])
         twenty_comp_calc_time.append(temp_calc_time)
         twenty_comp_draw_time.append(temp_draw_time)
+        twenty_comp_revisits.append(temp_revisists)
 
     for a_prob in prob_ids:
         temp_regular_list = []
@@ -1516,6 +1550,7 @@ def main():
         tot_comp_ans.append(tot_comp_problems[i][1][a_prob][2])
         tot_comp_calc_time.append(temp_calc_time)
         tot_comp_draw_time.append(temp_draw_time)
+        tot_comp_revisits.append(temp_revisists)
 
     for a_prob in prob_ids:
         ten_temp_regular_list = []
@@ -1582,6 +1617,34 @@ def main():
         ten_ans.append(ten_temp_ans)
         twenty_ans.append(twenty_temp_ans)
         tot_ans.append(tot_temp_ans)
+
+        ten_training_means.append(np.mean(ten_temp_regular_list))
+        ten_training_sd.append(np.std(ten_temp_regular_list))
+        twenty_training_means.append(np.mean(twenty_temp_regular_list))
+        twenty_training_sd.append(np.std(twenty_temp_regular_list))
+        tot_training_means.append(np.mean(tot_temp_regular_list))
+        tot_training_sd.append(np.std(tot_temp_regular_list))
+
+        ten_training_click_means.append(np.mean(ten_temp_click_regular_list))
+        ten_training_click_sd.append(np.std(ten_temp_click_regular_list))
+        twenty_training_click_means.append(np.mean(twenty_temp_click_regular_list))
+        twenty_training_click_sd.append(np.std(twenty_temp_click_regular_list))
+        tot_training_click_means.append(np.mean(tot_temp_click_regular_list))
+        tot_training_click_sd.append(np.std(tot_temp_click_regular_list))
+
+        ten_training_calc_means.append(np.mean(temp_ten_calc_time))
+        ten_training_calc_sd.append(np.std(temp_ten_calc_time))
+        twenty_training_calc_means.append(np.mean(temp_twenty_calc_time))
+        twenty_training_calc_sd.append(np.std(temp_twenty_calc_time))
+        tot_training_calc_means.append(np.mean(temp_tot_calc_time))
+        tot_training_calc_sd.append(np.std(temp_tot_calc_time))
+
+        ten_training_draw_means.append(np.mean(temp_ten_draw_time))
+        ten_training_draw_sd.append(np.std(temp_ten_draw_time))
+        twenty_training_draw_means.append(np.mean(temp_twenty_draw_time))
+        twenty_training_draw_sd.append(np.std(temp_twenty_draw_time))
+        tot_training_draw_means.append(np.mean(temp_tot_draw_time))
+        tot_training_draw_sd.append(np.std(temp_tot_draw_time))
 
         j_ten_c_time.append(temp_ten_calc_time)
         j_twenty_c_time.append(temp_twenty_calc_time)
@@ -1786,6 +1849,8 @@ def main():
 
     print(ten_temp_click_zscores_list[0])
     print(twenty_temp_click_zscores_list[0])
+
+    print(len(tot_comp_problems), tot_comp_problems[0])
     tot_flagged = []
     ten_comp_flagged = []
     twenty_comp_flagged = []
@@ -1794,9 +1859,12 @@ def main():
         ten_temp_zcores_map = {}
         twenty_temp_zcores_map = {}
         tot_temp_zcores_map = {}
-        ten_comp_flagged.append([1, ten_comp_problems[i][0]])
-        twenty_comp_flagged.append([1, twenty_comp_problems[i][0]])
-        tot_comp_flagged.append([1, tot_comp_problems[i][0]])
+        if i < len(ten_comp_problems):
+            ten_comp_flagged.append([1, ten_comp_problems[i][0]])
+        if i < len(twenty_comp_problems):
+            twenty_comp_flagged.append([1, twenty_comp_problems[i][0]])
+        if i < len(tot_comp_problems):
+            tot_comp_flagged.append([1, tot_comp_problems[i][0]])
         tot_flagged.append([1, alt_time_for_problems[i][0]])
         for j in range(0, len(prob_ids)):
             if not o_prob_ids[j] in OTHER:
@@ -1813,13 +1881,13 @@ def main():
                     tot_flagged[i] = [0, alt_time_for_problems[i][0]]
                 else:
                     tot_flag = 1
-                if len(ten_comp_problems) < i:
+                if i < len(ten_comp_problems):
                     if ten_rushed[j] >= ten_comp_zcores_list[j][i]:
                         ten_comp_flagged[i] = [0, ten_comp_problems[i][0]]
-                if len(twenty_comp_problems) < i:
+                if i < len(twenty_comp_problems):
                     if twenty_rushed[j] >= twenty_comp_zcores_list[j][i]:
                         twenty_comp_flagged[i] = [0, twenty_comp_problems[i][0]]
-                if len(tot_comp_problems) < i:
+                if i < len(tot_comp_problems):
                     if tot_rushed[j] >= tot_comp_zcores_list[j][i]:
                         tot_comp_flagged[i] = [0, tot_comp_problems[i][0]]
             else:
@@ -1837,7 +1905,6 @@ def main():
                                                   tot_grade[j][i], tot_calc_time[j][i], tot_draw_time[j][i],
                                                   tot_revisits[j][i], tot_flag]
 
-
         first_ten_minutes_zcore.append(
             [first_ten_minutes[i][0], ten_temp_zcores_map, ten_wrong_time_zscore[i], ten_nav_bar_clicked[i],
              z_ten_calc_time[i]])
@@ -1851,11 +1918,73 @@ def main():
     ten_comp_zscore = []
     twenty_comp_zscore = []
     tot_comp_zscore = []
+    print("ten grades: ", ten_comp_grade[1])
+    def calc_zscore(num, mean, sd):
+        return (num - mean) / sd
+
+    for i in range(0, len(ten_comp_zcores_list)):
+        for j in range(0, len(ten_comp_zcores_list[i])):
+            ten_comp_zcores_list[i][j] = calc_zscore(ten_comp_zcores_list[i][j], ten_training_means[i],
+                                                     ten_training_sd[i])
+            ten_comp_click_score_list[i][j] = calc_zscore(ten_comp_click_score_list[i][j], ten_training_click_means[i],
+                                                          ten_training_click_sd[i])
+            ten_comp_calc_time[i][j] = calc_zscore(ten_comp_calc_time[i][j], ten_training_calc_means[i],
+                                                   ten_training_calc_sd[i])
+            ten_comp_draw_time[i][j] = calc_zscore(ten_comp_draw_time[i][j], ten_training_draw_means[i],
+                                                   ten_training_draw_sd[i])
+
+    for i in range(0, len(twenty_comp_zcores_list)):
+        for j in range(0, len(twenty_comp_zcores_list[i])):
+            twenty_comp_zcores_list[i][j] = calc_zscore(twenty_comp_zcores_list[i][j], twenty_training_means[i],
+                                                        twenty_training_sd[i])
+            twenty_comp_click_score_list[i][j] = calc_zscore(twenty_comp_click_score_list[i][j],
+                                                             twenty_training_click_means[i],
+                                                             twenty_training_click_sd[i])
+            twenty_comp_calc_time[i][j] = calc_zscore(twenty_comp_calc_time[i][j], twenty_training_calc_means[i],
+                                                      twenty_training_calc_sd[i])
+            twenty_comp_draw_time[i][j] = calc_zscore(twenty_comp_draw_time[i][j], twenty_training_draw_means[i],
+                                                      twenty_training_draw_sd[i])
+    for i in range(0, len(tot_comp_zcores_list)):
+        for j in range(0, len(tot_comp_zcores_list[i])):
+            tot_comp_zcores_list[i][j] = calc_zscore(tot_comp_zcores_list[i][j], tot_training_means[i],
+                                                     tot_training_sd[i])
+            tot_comp_click_score_list[i][j] = calc_zscore(tot_comp_click_score_list[i][j], tot_training_click_means[i],
+                                                          tot_training_click_sd[i])
+            tot_comp_calc_time[i][j] = calc_zscore(tot_comp_calc_time[i][j], tot_training_calc_means[i],
+                                                   tot_training_calc_sd[i])
+            tot_comp_draw_time[i][j] = calc_zscore(tot_comp_draw_time[i][j], tot_training_draw_means[i],
+                                                   tot_training_draw_sd[i])
+
+    print("ten grades: ", ten_comp_grade[1])
 
     for i in range(0, len(ten_comp_problems)):
         temp_map = {}
+        temp_flag = 1
+
         for j in range(0, len(prob_ids)):
 
+            temp_map[o_prob_ids[j]] = [ten_comp_zcores_list[j][i], ten_comp_click_score_list[j][i],
+                                       ten_comp_grade[j][i], ten_comp_calc_time[j][i], ten_comp_draw_time[j][i],
+                                       ten_comp_revisits[j][i], ten_comp_flagged[i][0]]
+
+        ten_comp_zscore.append([ten_comp_problems[i][0], temp_map, 0, 0, 0])
+
+    for i in range(0, len(twenty_comp_problems)):
+        temp_map = {}
+        for j in range(0, len(prob_ids)):
+            temp_map[o_prob_ids[j]] = [twenty_comp_zcores_list[j][i], twenty_comp_click_score_list[j][i],
+                                       twenty_comp_grade[j][i], twenty_comp_calc_time[j][i],
+                                       twenty_comp_draw_time[j][i],
+                                       twenty_comp_revisits[j][i], twenty_comp_flagged[i][0]]
+        twenty_comp_zscore.append([twenty_comp_problems[i][0], temp_map, 0, 0, 0])
+
+    for i in range(0, len(tot_comp_problems)):
+        temp_map = {}
+        for j in range(0, len(prob_ids)):
+            temp_map[o_prob_ids[j]] = [tot_comp_zcores_list[j][i], tot_comp_click_score_list[j][i],
+                                       tot_comp_grade[j][i], tot_comp_calc_time[j][i], tot_comp_draw_time[j][i],
+                                       tot_comp_revisits[j][i], tot_comp_flagged[i][0]]
+            tot_comp_zscore.append([tot_comp_problems[i][0], temp_map, 0, 0, 0])
 
     print(first_ten_minutes_zcore[0])
     print(first_twenty_minutes_zcore[0])
@@ -1919,6 +2048,9 @@ def main():
     if os.path.exists('prob_ids'):
         os.remove('prob_ids')
 
+    print(ten_comp_zscore[0])
+    print(twenty_comp_zscore[0])
+    print(tot_comp_zscore[0])
     print(first_ten_minutes_zcore[1])
     print(first_twenty_minutes_zcore[1])
     print(tot_zscore[1])
